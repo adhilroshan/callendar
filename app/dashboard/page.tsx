@@ -5,6 +5,7 @@ import PhoneForm from "@/components/phone-form";
 import CalendarEvents from "@/components/calendar-events";
 import { db, UserData } from "@/lib/db";
 import { TestCallSection } from "@/components/test-call-section";
+import { RefreshButton } from "@/components/refresh-button";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -114,19 +115,27 @@ export default async function DashboardPage() {
             
             <div className="lg:col-span-2">
               <div className="bg-white shadow-sm rounded-2xl overflow-hidden border border-gray-100 transition-all duration-200 hover:shadow-md h-full">
-                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-5">
-                  <h2 className="text-xl font-semibold text-white flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    Upcoming Calendar Events
-                  </h2>
-                  <p className="mt-1 text-sm text-indigo-100">
-                    Your upcoming events within the next 24 hours
-                  </p>
+                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-5 flex justify-between items-center">
+                  <div>
+                    <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      Upcoming Calendar Events
+                    </h2>
+                    <p className="mt-1 text-sm text-indigo-100">
+                      Your upcoming events within the next 7 days
+                    </p>
+                  </div>
+                  <div className="hidden md:block">
+                    <RefreshButton />
+                  </div>
                 </div>
                 <div className="divide-y divide-gray-200">
                   <CalendarEvents accessToken={session.accessToken!} />
+                </div>
+                <div className="p-4 border-t border-gray-200 md:hidden">
+                  <RefreshButton />
                 </div>
               </div>
             </div>
@@ -145,8 +154,8 @@ export default async function DashboardPage() {
                 </p>
               </div>
               <div>
-                <a href="/dashboard" className="inline-flex items-center justify-center text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-indigo-600 text-white hover:bg-indigo-700 h-9 rounded-md px-4">
-                  Refresh Dashboard
+                <a href="/dashboard" className="inline-flex items-center justify-center text-sm font-medium text-gray-500 hover:text-gray-700">
+                  Reload Page
                 </a>
               </div>
             </div>

@@ -78,16 +78,16 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
     }
   },
   events: {
-    async signIn({ user }) {
+    async signIn({ user, account }) {
       // Create or update user in our database when they sign in
-      if (user.email) {
+      if (user.email && account) {
         await db.createUser({
           email: user.email,
           name: user.name || "User",
-          accessToken: "",
-          refreshToken: "",
+          accessToken: account.access_token || "",
+          refreshToken: account.refresh_token || "",
         });
-        console.log("User created/updated in database:", user.email);
+        console.log("User created/updated in database with tokens:", user.email);
       }
     }
   },

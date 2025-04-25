@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { signIn, useSession } from "next-auth/react";
+import { useCalendarContext } from "./calendar-context";
 
 interface CalendarEvent {
   id: string;
@@ -20,6 +21,7 @@ interface CalendarEvent {
 export default function CalendarEvents({ accessToken }: { accessToken: string }) {
   const router = useRouter();
   const { data: session } = useSession();
+  const { refreshTrigger } = useCalendarContext();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -34,6 +36,9 @@ export default function CalendarEvents({ accessToken }: { accessToken: string })
 
     const fetchCalendarEvents = async () => {
       try {
+        setLoading(true);
+        setError("");
+        
         if (!accessToken) {
           setError("No access token available. Please sign in again.");
           setLoading(false);
@@ -41,22 +46,30 @@ export default function CalendarEvents({ accessToken }: { accessToken: string })
           return;
         }
 
-        // Get current time and 24 hours from now
+        // Get current time and 7 days from now (increased from 24 hours)
         const now = new Date();
-        const oneDayFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+        const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
         // Create the API endpoint URL with query parameters
         const apiUrl = new URL("https://www.googleapis.com/calendar/v3/calendars/primary/events");
-        apiUrl.searchParams.append("timeMin", now.toISOString());
-        apiUrl.searchParams.append("timeMax", oneDayFromNow.toISOString());
+        
+        // Use a timestamp slightly before now to ensure we don't miss any events
+        const timeMin = new Date(now.getTime() - 10 * 60 * 1000); // 10 minutes ago
+        apiUrl.searchParams.append("timeMin", timeMin.toISOString());
+        apiUrl.searchParams.append("timeMax", sevenDaysFromNow.toISOString());
         apiUrl.searchParams.append("singleEvents", "true");
         apiUrl.searchParams.append("orderBy", "startTime");
+        apiUrl.searchParams.append("maxResults", "50"); // Ensure we get enough events
+
+        console.log("Fetching calendar events from:", timeMin.toISOString(), "to", sevenDaysFromNow.toISOString());
 
         // Fetch calendar events
         const response = await fetch(apiUrl.toString(), {
           headers: {
             Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
           },
+          cache: 'no-store' // Prevent caching
         });
 
         if (response.status === 401) {
@@ -70,13 +83,21 @@ export default function CalendarEvents({ accessToken }: { accessToken: string })
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
+          console.error("Calendar API error response:", errorData);
           throw new Error(
             errorData.error?.message || "Failed to fetch calendar events"
           );
         }
 
         const data = await response.json();
-        setEvents(data.items || []);
+        console.log(`Fetched ${data.items?.length || 0} calendar events`);
+        
+        if (data.items && data.items.length > 0) {
+          setEvents(data.items);
+        } else {
+          console.log("No events returned from Google Calendar API");
+          setEvents([]);
+        }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
         console.error("Error fetching calendar events:", err);
@@ -87,7 +108,7 @@ export default function CalendarEvents({ accessToken }: { accessToken: string })
     };
 
     fetchCalendarEvents();
-  }, [accessToken, session, router]);
+  }, [accessToken, session, router, refreshTrigger]);
 
   // Format date and time
   const formatDateTime = (dateTimeStr: string) => {
@@ -139,7 +160,8 @@ export default function CalendarEvents({ accessToken }: { accessToken: string })
   if (events.length === 0) {
     return (
       <div className="p-6 text-center">
-        <p className="text-sm text-gray-500">No upcoming events in the next 24 hours.</p>
+        <p className="text-sm text-gray-500">No upcoming events in the next 7 days.</p>
+        <p className="mt-2 text-xs text-gray-400">If you know you have events, try refreshing or check your Google Calendar settings.</p>
       </div>
     );
   }
