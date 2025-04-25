@@ -56,7 +56,7 @@ For more details, see the [Error Handling Documentation](docs/error-handling.md)
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/callendar.git
+git clone https://github.com/adhilroshan/callendar.git
 cd callendar
 ```
 
