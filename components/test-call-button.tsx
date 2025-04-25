@@ -22,7 +22,7 @@ export function TestCallButton() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: 'This is a test call from your Callendar application. Your reminder system is working correctly.',
+          message: 'Hello, this is your Callendar reminder service. This is a test call confirming your reminders are working correctly. You will receive similar calls before your scheduled events.',
         }),
       });
       

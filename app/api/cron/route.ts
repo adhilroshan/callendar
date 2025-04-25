@@ -110,7 +110,7 @@ export async function GET() {
                 
                 // Make the Twilio call
                 const call = await twilioClient.calls.create({
-                  twiml: `<Response><Say>Reminder: You have an event "${event.summary || 'Untitled'}" starting soon.</Say></Response>`,
+                  twiml: `<Response><Say voice="alice" language="en-US">Hello, this is your Callendar reminder service. You have an event "${event.summary || 'Untitled'}" starting in approximately 5 minutes. Please make your preparations now. Thank you for using Callendar.</Say></Response>`,
                   to: user.phoneNumber,
                   from: twilioPhoneNumber,
                 });

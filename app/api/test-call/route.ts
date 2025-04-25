@@ -55,11 +55,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Parse request body for custom message
-    let customMessage = "This is a test call from Callendar.";
+    let customMessage = "Hello, this is your Callendar reminder service. This is a test call confirming your reminders are working correctly.";
     try {
       const body = await req.json();
       if (body.message) {
-        customMessage = body.message.slice(0, 100); // Limit message length
+        customMessage = body.message.slice(0, 150); // Increase message length limit
       }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (e) {
@@ -68,7 +68,13 @@ export async function POST(req: NextRequest) {
 
     // Make the Twilio call
     const call = await twilioClient.calls.create({
-      twiml: `<Response><Say>Test reminder: ${customMessage}</Say></Response>`,
+      twiml: `<Response>
+        <Say voice="alice" language="en-US">
+          ${customMessage}
+          <Break time="1"/>
+          Thank you for using Callendar.
+        </Say>
+      </Response>`,
       to: user.phoneNumber,
       from: twilioPhoneNumber,
     });
