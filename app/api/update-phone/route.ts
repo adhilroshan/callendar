@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
     // Check if user is authenticated
     if (!session?.user) {
       return NextResponse.json(
-        { error: "You must be logged in" },
+        { error: "You must be logged in to update your phone number" },
         { status: 401 }
       );
     }
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     const user = await db.getUser(userId);
     if (!user) {
       return NextResponse.json(
-        { error: "User not found" },
+        { error: "User not found. Your session has expired. Please refresh the page to reconnect your account." },
         { status: 404 }
       );
     }
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     const authUser = await db.getUserByEmail(session.user.email!);
     if (!authUser || authUser.id !== userId) {
       return NextResponse.json(
-        { error: "Unauthorized" },
+        { error: "You are not authorized to update this user's phone number" },
         { status: 403 }
       );
     }
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("Error updating phone number:", error);
     return NextResponse.json(
-      { error: "Failed to update phone number" },
+      { error: "Failed to update phone number. Please try again later." },
       { status: 500 }
     );
   }

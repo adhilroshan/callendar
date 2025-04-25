@@ -17,6 +17,7 @@ Callendar checks your Google Calendar every 5 minutes to identify upcoming event
 - **User Dashboard**: Modern interface to manage your phone number and view upcoming events
 - **Responsive Design**: Works beautifully on both desktop and mobile devices
 - **Secure Authentication**: Powered by Next.js Auth and Google OAuth
+- **Robust Error Handling**: User-friendly error messages with recovery options for common issues
 
 ## Technical Details
 
@@ -32,6 +33,17 @@ Callendar checks your Google Calendar every 5 minutes to identify upcoming event
 - User information and notification history are stored in a persistent database
 - Each user record includes their email, name, phone number, and OAuth tokens
 - Event alerts are tracked to ensure each event triggers only one notification call
+
+### Error Handling
+
+The application includes a robust error handling system that provides user-friendly error messages and recovery options. Key features include:
+
+- **Session Expiration Detection**: Automatically detects when a user's session has expired
+- **Recovery Actions**: Provides one-click refresh options for session recovery
+- **Consistent Error UI**: Standardized error components across the application
+- **Helpful Error Messages**: Clear instructions on how to resolve common issues
+
+For more details, see the [Error Handling Documentation](docs/error-handling.md).
 
 ## Prerequisites
 

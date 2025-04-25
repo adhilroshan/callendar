@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { SessionExpired } from "./session-expired";
+import { isSessionExpiredError, getSessionExpiredMessage } from "@/lib/session-utils";
+import { ErrorBoundary, DefaultErrorFallback } from "./error-boundary";
 
 interface PhoneFormProps {
   userId: string;
@@ -9,6 +12,14 @@ interface PhoneFormProps {
 }
 
 export default function PhoneForm({ userId, currentPhone }: PhoneFormProps) {
+  return (
+    <ErrorBoundary fallback={(error, reset) => <DefaultErrorFallback error={error} reset={reset} />}>
+      <PhoneFormContent userId={userId} currentPhone={currentPhone} />
+    </ErrorBoundary>
+  );
+}
+
+function PhoneFormContent({ userId, currentPhone }: PhoneFormProps) {
   const router = useRouter();
   const [phoneNumber, setPhoneNumber] = useState(currentPhone || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -59,9 +70,9 @@ export default function PhoneForm({ userId, currentPhone }: PhoneFormProps) {
       setDebug(prev => `${prev}\nResponse status: ${response.status}`);
 
       if (!response.ok) {
-        // Special handling for 404 User not found case
-        if (response.status === 404 && data.error === "User not found") {
-          throw new Error("Your session has expired. Please refresh the page to reconnect your account.");
+        // Special handling for session expiration
+        if (isSessionExpiredError(response.status, data.error || "")) {
+          throw new Error(getSessionExpiredMessage());
         }
         throw new Error(data.error || "Failed to update phone number");
       }
@@ -102,20 +113,16 @@ export default function PhoneForm({ userId, currentPhone }: PhoneFormProps) {
         </p>
       </div>
 
-      {error && (
+      {error && !error.includes("session has expired") && (
         <div className="rounded-md bg-red-50 p-4">
-          <div className="flex flex-col">
+          <div className="flex">
             <div className="text-sm text-red-700">{error}</div>
-            {error.includes("session has expired") && (
-              <button 
-                onClick={() => router.refresh()} 
-                className="mt-2 text-sm text-red-700 underline"
-              >
-                Click here to refresh
-              </button>
-            )}
           </div>
         </div>
+      )}
+
+      {error && error.includes("session has expired") && (
+        <SessionExpired />
       )}
 
       {success && (
