@@ -4,6 +4,7 @@ import Header from "@/components/header";
 import PhoneForm from "@/components/phone-form";
 import CalendarEvents from "@/components/calendar-events";
 import { db, UserData } from "@/lib/db";
+import { TestCallSection } from "@/components/test-call-section";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -33,7 +34,7 @@ export default async function DashboardPage() {
       console.error("Failed to create user in database");
       return (
         <div className="min-h-screen bg-gray-50">
-          <Header session={session} />
+          <Header />
           <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl mx-auto">
               <h1 className="text-3xl font-bold text-gray-900 mb-6">Error</h1>
@@ -51,7 +52,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      <Header session={session} />
+      <Header />
       <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-6">
@@ -65,7 +66,7 @@ export default async function DashboardPage() {
           
           <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
             <div className="md:col-span-1">
-              <div className="bg-white shadow-lg rounded-xl overflow-hidden border border-gray-100">
+              <div className="bg-white shadow-lg rounded-xl overflow-hidden border border-gray-100 mb-8">
                 <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4">
                   <h2 className="text-lg font-semibold text-white">
                     Phone Call Alerts
@@ -91,6 +92,9 @@ export default async function DashboardPage() {
                   </div>
                 </div>
               </div>
+              
+              {/* Test Call Section */}
+              <TestCallSection />
             </div>
             
             <div className="md:col-span-2">

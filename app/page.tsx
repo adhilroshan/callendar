@@ -7,7 +7,7 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 to-white">
-      <Header session={session} />
+      <Header />
       <main className="flex-grow">
         <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:py-16 lg:px-8">
           {/* Hero Section */}

@@ -3,39 +3,34 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
-
-// Server action to sign out (will be imported but not executed on the client)
-import { signOut } from "@/auth";
-
-// Define proper Session type
-type SessionUser = {
-  name?: string | null;
-  email?: string | null;
-  image?: string | null;
-};
-
-type Session = {
-  user?: SessionUser | null;
-};
+import { signOut, useSession } from "next-auth/react";
 
 function SignOutButton() {
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  
+  const handleSignOut = async () => {
+    try {
+      setIsSigningOut(true);
+      await signOut({ redirect: true, callbackUrl: '/' });
+    } catch (error) {
+      console.error("Error signing out:", error);
+      setIsSigningOut(false);
+    }
+  };
+  
   return (
-    <form
-      action={async () => {
-        await signOut({ redirectTo: "/" });
-      }}
+    <button
+      onClick={handleSignOut}
+      disabled={isSigningOut}
+      className="px-4 py-2 text-sm font-medium text-indigo-600 bg-white rounded-md hover:bg-indigo-50 transition-colors duration-200 disabled:opacity-50"
     >
-      <button
-        type="submit"
-        className="px-4 py-2 text-sm font-medium text-indigo-600 bg-white rounded-md hover:bg-indigo-50 transition-colors duration-200"
-      >
-        Sign out
-      </button>
-    </form>
+      {isSigningOut ? "Signing out..." : "Sign out"}
+    </button>
   );
 }
 
-export default function Header({ session }: { session: Session | null }) {
+export default function Header() {
+  const { data: session } = useSession();
   const [scrolled, setScrolled] = useState(false);
 
   // Add scroll effect - client-side only
