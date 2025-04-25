@@ -25,6 +25,7 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/callen
 
 // Connection function
 let cachedConnection: typeof mongoose | null = null;
+let connectionPromise: Promise<typeof mongoose> | null = null;
 
 async function connectToDatabase() {
   // This function will only run on the server
@@ -32,19 +33,35 @@ async function connectToDatabase() {
     throw new Error('This function is meant to be run on the server only');
   }
   
+  // Return existing connection if available
   if (cachedConnection) {
     return cachedConnection;
   }
 
-  try {
-    const connection = await connect(MONGODB_URI);
-    console.log('Connected to MongoDB');
-    cachedConnection = connection;
-    return connection;
-  } catch (error) {
-    console.error('MongoDB connection error:', error);
-    throw new Error('Unable to connect to database');
+  // Return in-progress connection attempt if one exists
+  if (connectionPromise) {
+    return connectionPromise;
   }
+
+  // Create new connection promise
+  connectionPromise = new Promise(async (resolve, reject) => {
+    try {
+      const connection = await connect(MONGODB_URI, {
+        serverSelectionTimeoutMS: 5000, // 5 seconds timeout
+        socketTimeoutMS: 45000, // 45 seconds socket timeout
+      });
+      console.log('Connected to MongoDB');
+      cachedConnection = connection;
+      connectionPromise = null;
+      resolve(connection);
+    } catch (error) {
+      console.error('MongoDB connection error:', error);
+      connectionPromise = null;
+      reject(new Error('Unable to connect to database'));
+    }
+  });
+
+  return connectionPromise;
 }
 
 // Define Schemas
