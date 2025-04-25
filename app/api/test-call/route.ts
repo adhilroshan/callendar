@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
       if (body.message) {
         customMessage = body.message.slice(0, 100); // Limit message length
       }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (e) {
       // Use default message if no body or parsing fails
     }
