@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import Header from "@/components/header";
 import PhoneForm from "@/components/phone-form";
 import CalendarEvents from "@/components/calendar-events";
-import { db } from "@/lib/db";
+import { db, UserData } from "@/lib/db";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -19,12 +19,14 @@ export default async function DashboardPage() {
   if (!user) {
     console.log("Creating new user in database for:", session.user.email);
     // Create the user with their email, name and tokens from the session
-    user = await db.createUser({
+    const newUserData: UserData = {
       email: session.user.email!,
       name: session.user.name || "User",
       accessToken: session.accessToken || "",
       refreshToken: "",
-    });
+    };
+    
+    user = await db.createUser(newUserData);
     
     // If user creation failed, handle the error
     if (!user) {
@@ -73,7 +75,7 @@ export default async function DashboardPage() {
                   </p>
                 </div>
                 <div className="px-6 py-6">
-                  <PhoneForm userId={user.id} currentPhone={user.phoneNumber} />
+                  <PhoneForm userId={user.id} currentPhone={user.phoneNumber || ""} />
                 </div>
 
                 <div className="px-6 py-4 bg-indigo-50 border-t border-indigo-100">

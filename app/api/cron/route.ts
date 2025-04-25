@@ -36,7 +36,7 @@ export async function GET() {
 
     // Process each user
     for (const user of users) {
-      if (!user.phoneNumber || !user.accessToken) {
+      if (!user || !user.phoneNumber || !user.accessToken) {
         continue;
       }
 

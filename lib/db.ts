@@ -1,18 +1,8 @@
-// This is a simple database implementation with persistence
-// In a real application, you would use a persistent database like MongoDB, PostgreSQL, etc.
+// MongoDB implementation using Mongoose
+import mongoose, { Schema, Document, model, Model, connect } from 'mongoose';
 
-// Mark this module as server-only
-import 'server-only';
-import { MongoClient, ObjectId } from 'mongodb';
-
-// MongoDB connection string - should be in environment variables
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/callendar';
-const MONGODB_DB = process.env.MONGODB_DB || 'callendar';
-
-// MongoDB types
-interface User {
-  _id?: ObjectId;
-  id: string;
+// Basic interfaces for plain objects
+export interface UserData {
   email: string;
   name: string;
   phoneNumber?: string;
@@ -20,134 +10,150 @@ interface User {
   refreshToken?: string;
 }
 
-interface EventAlert {
-  _id?: ObjectId;
+export interface EventAlertData {
   userId: string;
   eventId: string;
   alertedAt: Date;
 }
 
-// MongoDB client
-let client: MongoClient;
-let clientPromise: Promise<MongoClient>;
+// Document interfaces for Mongoose
+interface UserDocument extends UserData, Document {}
+interface EventAlertDocument extends EventAlertData, Document {}
 
-if (!MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable');
-}
+// MongoDB connection
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/callendar';
 
-// Global to maintain connection across hot reloads in development
-if (process.env.NODE_ENV === 'development') {
-  // In development, use a global variable so the connection 
-  // persists across hot reloads
-  const globalWithMongo = global as typeof globalThis & {
-    _mongoClientPromise?: Promise<MongoClient>
-  };
+// Connection function
+let cachedConnection: typeof mongoose | null = null;
 
-  if (!globalWithMongo._mongoClientPromise) {
-    client = new MongoClient(MONGODB_URI);
-    globalWithMongo._mongoClientPromise = client.connect();
+async function connectToDatabase() {
+  // This function will only run on the server
+  if (typeof window !== 'undefined') {
+    throw new Error('This function is meant to be run on the server only');
   }
-  clientPromise = globalWithMongo._mongoClientPromise;
-} else {
-  // In production, create a new connection
-  client = new MongoClient(MONGODB_URI);
-  clientPromise = client.connect();
-}
-
-// Helper function to get MongoDB collections
-async function getCollections() {
-  const client = await clientPromise;
-  const db = client.db(MONGODB_DB);
   
-  return {
-    users: db.collection<User>('users'),
-    eventAlerts: db.collection<EventAlert>('eventAlerts')
-  };
+  if (cachedConnection) {
+    return cachedConnection;
+  }
+
+  try {
+    const connection = await connect(MONGODB_URI);
+    console.log('Connected to MongoDB');
+    cachedConnection = connection;
+    return connection;
+  } catch (error) {
+    console.error('MongoDB connection error:', error);
+    throw new Error('Unable to connect to database');
+  }
 }
 
+// Define Schemas
+const UserSchema = new Schema<UserDocument>({
+  email: { type: String, required: true, unique: true },
+  name: { type: String, required: true },
+  phoneNumber: { type: String },
+  accessToken: { type: String },
+  refreshToken: { type: String }
+}, { timestamps: true });
+
+const EventAlertSchema = new Schema<EventAlertDocument>({
+  userId: { type: String, required: true },
+  eventId: { type: String, required: true },
+  alertedAt: { type: Date, default: Date.now }
+}, { timestamps: true });
+
+// Create or get models (handling Next.js hot reloading)
+function getModels() {
+  // Check if models are already defined to prevent model overwrite errors during hot reload
+  const UserModel = mongoose.models.User as Model<UserDocument> || 
+    model<UserDocument>('User', UserSchema);
+  
+  const EventAlertModel = mongoose.models.EventAlert as Model<EventAlertDocument> || 
+    model<EventAlertDocument>('EventAlert', EventAlertSchema);
+  
+  return { UserModel, EventAlertModel };
+}
+
+// Helper to convert document to plain object with string id
+const documentToPlainObject = <T>(doc: Document | null): (T & { id: string }) | null => {
+  if (!doc) return null;
+  
+  const obj = doc.toObject ? doc.toObject() : doc;
+  return {
+    ...obj,
+    id: obj._id.toString(),
+    _id: undefined
+  };
+};
+
+// Database methods
 export const db = {
   // User methods
-  createUser: async (userData: Omit<User, 'id' | '_id'>) => {
-    const { users } = await getCollections();
+  createUser: async (userData: UserData) => {
+    await connectToDatabase();
+    const { UserModel } = getModels();
     
-    // Generate unique ID
-    const id = new ObjectId().toString();
-    
-    // Check if user with this email already exists
-    const existingUser = await users.findOne({ email: userData.email });
+    // Check if user already exists
+    const existingUser = await UserModel.findOne({ email: userData.email });
     
     if (existingUser) {
       // Update existing user
-      const updatedUser = {
-        ...existingUser,
-        ...userData,
-        id: existingUser.id
-      };
-      
-      await users.updateOne(
-        { email: userData.email },
-        { $set: updatedUser }
-      );
-      
-      return updatedUser;
+      Object.assign(existingUser, userData);
+      const savedUser = await existingUser.save();
+      return documentToPlainObject<UserData>(savedUser);
     }
     
     // Create new user
-    const newUser = {
-      id,
-      ...userData
-    };
-    
-    await users.insertOne(newUser);
-    return newUser;
+    const newUser = new UserModel(userData);
+    const savedUser = await newUser.save();
+    return documentToPlainObject<UserData>(savedUser);
   },
   
   getUser: async (id: string) => {
-    const { users } = await getCollections();
-    return users.findOne({ id });
+    await connectToDatabase();
+    const { UserModel } = getModels();
+    const user = await UserModel.findById(id);
+    return documentToPlainObject<UserData>(user);
   },
   
   getUserByEmail: async (email: string) => {
-    const { users } = await getCollections();
-    return users.findOne({ email });
+    await connectToDatabase();
+    const { UserModel } = getModels();
+    const user = await UserModel.findOne({ email });
+    return documentToPlainObject<UserData>(user);
   },
   
-  updateUser: async (id: string, userData: Partial<User>) => {
-    const { users } = await getCollections();
-    
-    // Exclude _id from updates if present
-    const { _id, ...updateData } = userData;
-    
-    const result = await users.updateOne(
-      { id },
-      { $set: updateData }
+  updateUser: async (id: string, userData: Partial<UserData>) => {
+    await connectToDatabase();
+    const { UserModel } = getModels();
+    const user = await UserModel.findByIdAndUpdate(
+      id, 
+      userData, 
+      { new: true, runValidators: true }
     );
-    
-    if (result.matchedCount === 0) return null;
-    return users.findOne({ id });
+    return documentToPlainObject<UserData>(user);
   },
   
   getUsers: async () => {
-    const { users } = await getCollections();
-    return users.find({}).toArray();
+    await connectToDatabase();
+    const { UserModel } = getModels();
+    const users = await UserModel.find();
+    return users.map(user => documentToPlainObject<UserData>(user));
   },
   
   // Event alert methods
   checkEventAlert: async (userId: string, eventId: string) => {
-    const { eventAlerts } = await getCollections();
-    const alert = await eventAlerts.findOne({ userId, eventId });
+    await connectToDatabase();
+    const { EventAlertModel } = getModels();
+    const alert = await EventAlertModel.findOne({ userId, eventId });
     return !!alert;
   },
   
   markEventAlerted: async (userId: string, eventId: string) => {
-    const { eventAlerts } = await getCollections();
-    
-    await eventAlerts.insertOne({
-      userId,
-      eventId,
-      alertedAt: new Date()
-    });
-    
+    await connectToDatabase();
+    const { EventAlertModel } = getModels();
+    const newAlert = new EventAlertModel({ userId, eventId, alertedAt: new Date() });
+    await newAlert.save();
     return true;
   }
 }; 
