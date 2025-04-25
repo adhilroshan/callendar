@@ -46,7 +46,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 /**
  * Default error fallback component
  */
-export function DefaultErrorFallback({ error, reset }: { error: Error; reset: () => void }): JSX.Element {
+export function DefaultErrorFallback({ error, reset }: { error: Error; reset: () => void }): React.ReactElement {
   return (
     <div className="p-4 border border-red-200 rounded-md bg-red-50">
       <div className="flex items-center mb-2">
